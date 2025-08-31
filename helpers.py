@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.io as pio
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 
 def fetch_medal_tally(df,years,country):
@@ -57,3 +60,61 @@ def most_successful(df,Sport):
     x=temp_df['Name'].value_counts().reset_index().head(15).merge(df,left_on ='Name',right_on='Name',how='left')[['Name','count','Sport','region']].drop_duplicates('Name')
     x.rename(columns={'count':'Medal_Count','region':'Country'},inplace=True)
     return x
+
+def yearwise_medal_tally(df,country):
+    temp_df = df.dropna(subset=['Medal'])
+    temp_df.drop_duplicates(subset=["Team","NOC","Games","Year","City","Sport","Event","Medal"],inplace=True)
+    if country == "Overall":
+        final_df = temp_df.groupby('Year').size().reset_index(name='Medal')
+    else:
+        final_df = temp_df[temp_df['region'] == country].groupby('Year').size().reset_index(name='Medal')
+
+    return final_df
+
+def country_wise_heatmap(df,country):
+    temp_df = df.dropna(subset=['Medal'])
+    temp_df.drop_duplicates(subset=["Team","NOC","Games","Year","City","Sport","Event","Medal"],inplace=True)
+    new_df = temp_df[temp_df['region'] == country]
+    if new_df.empty:
+        return None  # no medals for that country
+
+    pivot_df = new_df.pivot_table(
+        index='Sport',
+        columns='Year',
+        values='Medal',
+        aggfunc='count'
+    ).fillna(0)
+
+    return pivot_df
+
+
+def most_successful_regionwise(df,region):
+    temp_df = df.dropna(subset=['Medal'])
+    temp_df= temp_df[temp_df['region']== region]
+
+    x=temp_df['Name'].value_counts().reset_index().head(15).merge(df,left_on ='Name',right_on='Name',how='left')[['Name','count','Sport']].drop_duplicates('Name')
+    x.rename(columns={'count':'Medal_Count','region':'Country'},inplace=True)
+    return x
+
+def weight_height(df,sport):
+    athlete_df = df.drop_duplicates(subset=['Name','region'])
+    athlete_df['Medal'].fillna('No Medal',inplace=True)
+    if sport != 'Overall':
+       temp_df= athlete_df[athlete_df['Sport'] == sport]
+       return temp_df
+    else:
+        return athlete_df
+    
+def men_vs_women(df):
+    athlete_df = df.drop_duplicates(subset=['Name','region'])
+    men = athlete_df[athlete_df['Sex']=='M'].groupby('Year').count()['Name'].reset_index()
+    women = athlete_df[athlete_df['Sex']=='F'].groupby('Year').count()['Name'].reset_index()
+    final = men.merge(women,on='Year')
+    final.rename(columns={'Name_x':"Male",'Name_y':'Female'},inplace=True)
+    final.fillna(0,inplace=True)
+
+    return final
+
+
+
+
