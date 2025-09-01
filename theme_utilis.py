@@ -1,4 +1,3 @@
-# theme_manager.py
 import streamlit as st
 import plotly.io as pio
 
@@ -6,48 +5,48 @@ class ThemeManager:
     """
     Usage:
       tm = ThemeManager()
-      tm.select_theme()   # renders the sidebar radio and sets session_state
-      tm.apply_theme()    # injects css and sets plotly template
+      tm.apply_theme()    # Call at top of script to inject styles
+      tm.select_theme()   # Call in sidebar to allow user to switch theme
     """
 
     def __init__(self):
         if "theme" not in st.session_state:
-            st.session_state["theme"] = "Light"
+            st.session_state["theme"] = "Dark"  # default dark theme
 
-        # color palettes used by this manager
         self._palettes = {
             "Light": {
-                "bg": "#FFFFFF",
+                "bg": "#FFFFFF",         # main page and header
                 "text": "#0A0A0A",
-                "panel": "#F8F9FA",
+                "panel": "#F0F2F6",      # slightly different sidebar
                 "table_bg": "#FFFFFF",
                 "table_text": "#0A0A0A",
                 "plotly_template": "plotly_white",
             },
             "Dark": {
-                "bg": "#0E1117",
+                "bg": "#0E1117",         # main page and header
                 "text": "#F5F5F5",
-                "panel": "#1E1E1E",
+                "panel": "#1A1A1A",      # slightly different sidebar
                 "table_bg": "#161616",
                 "table_text": "#F5F5F5",
                 "plotly_template": "plotly_dark",
             },
         }
 
-    def select_theme(self):
-        """Render sidebar control and update session_state['theme'].""" 
+    def select_theme(self, key="theme_radio"):
+        """Render theme radio and update session_state['theme']"""
         st.sidebar.subheader("🎨 Theme")
         choice = st.sidebar.radio(
             "Choose theme",
             ["Light", "Dark"],
-            index=0 if st.session_state["theme"]=="Light" else 1
+            index=0 if st.session_state["theme"] == "Light" else 1,
+            key=key
         )
         st.session_state["theme"] = choice
 
     def apply_theme(self):
-        """Apply CSS and Plotly template based on current session_state['theme'].""" 
-        theme = st.session_state.get("theme", "Light")
-        pal = self._palettes.get(theme, self._palettes["Light"])
+        """Apply CSS and Plotly template based on current session_state['theme']"""
+        theme = st.session_state.get("theme", "Dark")
+        pal = self._palettes.get(theme, self._palettes["Dark"])
 
         # Set Plotly template
         tpl = pal["plotly_template"]
@@ -61,11 +60,25 @@ class ThemeManager:
         except Exception:
             pio.templates.default = tpl
 
-        # Inject CSS for app, sidebar, tables, dropdowns, metrics, plotly
+        # Dropdown styling
+        if theme == "Dark":
+            dropdown_bg = "#1e1e1e"
+            dropdown_text = "#ffffff"
+            dropdown_border = "#444444"
+            dropdown_hover = "#333333"
+            dropdown_hover_text = "#00e6e6"
+        else:  # Light theme
+            dropdown_bg = "#ffffff"
+            dropdown_text = "#000000"
+            dropdown_border = "#cccccc"
+            dropdown_hover = "#f0f0f0"
+            dropdown_hover_text = "#000000"
+
+        # Inject CSS including Streamlit header
         css = f"""
         <style>
-        /* Main app + page container */
-        [data-testid="stAppViewContainer"], .stApp {{
+        /* Main app + header */
+        [data-testid="stAppViewContainer"], .stApp, header[data-testid="stHeader"] {{
             background-color: {pal['bg']} !important;
             color: {pal['text']} !important;
         }}
@@ -79,71 +92,62 @@ class ThemeManager:
             color: {pal['text']} !important;
         }}
 
-        /* Headings & markdown text */
-        .stMarkdown, .stText, .stWrite, .css-1d391kg, .css-ffhzg2, h1, h2, h3, h4, h5, h6, p, span, label {{
+        /* Headings, markdown, labels */
+        .stMarkdown, .stText, .stWrite, h1, h2, h3, h4, h5, h6, p, span, label {{
             color: {pal['text']} !important;
         }}
 
-        /* Metrics / big numbers */
+        /* Metrics */
         [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {{
             color: {pal['text']} !important;
         }}
 
-        /* DataFrame & table */
+        /* Tables */
         [data-testid="stDataFrame"] table, .stTable table {{
             background-color: {pal['table_bg']} !important;
             color: {pal['table_text']} !important;
         }}
         [data-testid="stDataFrame"] table th, .stTable thead th {{
-            color: {pal['table_text']} !important;
             background-color: {pal['panel']} !important;
+            color: {pal['table_text']} !important;
         }}
         [data-testid="stDataFrame"] table td, .stTable tbody td {{
-            color: {pal['table_text']} !important;
             background-color: {pal['table_bg']} !important;
+            color: {pal['table_text']} !important;
         }}
 
-        /* Selectbox / dropdown (sidebar and main) */
+        /* Dropdown / Selectbox styling */
         div[data-baseweb="select"] > div,
         div[data-testid="stSelectbox"] {{
-            background-color: #1e1e1e !important;
-            color: #ffffff !important;
-            border: 1px solid #444444 !important;
+            background-color: {dropdown_bg} !important;
+            color: {dropdown_text} !important;
+            border: 1px solid {dropdown_border} !important;
             box-shadow: none !important;
         }}
-
-        /* Placeholder / selected text */
         div[data-baseweb="select"] span {{
-            color: #ffffff !important;
+            color: {dropdown_text} !important;
         }}
-
-        /* Dropdown container (opened options) */
         div[data-baseweb="popover"],
         div[data-testid="stSelectbox"] [role="listbox"] {{
-            background-color: #1e1e1e !important;
-            color: #ffffff !important;
-            border: 1px solid #444444 !important;
+            background-color: {dropdown_bg} !important;
+            color: {dropdown_text} !important;
+            border: 1px solid {dropdown_border} !important;
             z-index: 9999 !important;
             box-shadow: none !important;
         }}
-
-        /* Each option */
         div[data-baseweb="option"], div[role="option"] {{
-            background-color: #1e1e1e !important;
-            color: #ffffff !important;
+            background-color: {dropdown_bg} !important;
+            color: {dropdown_text} !important;
         }}
-
-        /* Hover effect */
         div[data-baseweb="option"]:hover, div[role="option"]:hover {{
-            background-color: #333333 !important;
-            color: #00e6e6 !important;
+            background-color: {dropdown_hover} !important;
+            color: {dropdown_hover_text} !important;
         }}
 
-        /* Plotly container */
+        /* Plotly transparency fix */
         .js-plotly-plot .plotly, .plot-container {{
             background-color: transparent !important;
         }}
         </style>
         """
         st.markdown(css, unsafe_allow_html=True)
-
